@@ -1,4 +1,4 @@
-# STLDTM
-A PyTorch implementation of the paper "Spatiotemporal Latent Diffusion Transformer for Precipitation Nowcasting".
+# CRFT
+A PyTorch implementation of the paper "Improving Precipitation Nowcasting with Conditional Rectified Flow Transformers".
 
 continue update
