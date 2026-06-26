@@ -1,6 +1,5 @@
 import os
 import torch
-# import logging
 import numpy as np
 from tqdm.auto import tqdm
 from torch.optim import AdamW
@@ -10,7 +9,6 @@ from accelerate.utils import set_seed
 from core.datasets import get_datasets
 from core.model.stdit import STDiTBackbone
 from core.model.rectified_flow import RFLOW
-# from core.helpers.metrics import Evaluator
 from core.model.Autoencoder import get_model
 from core.helpers.evaluation import Evaluation
 from accelerate.utils import DistributedDataParallelKwargs
@@ -49,7 +47,7 @@ class Model(object):
         self.optimizer.zero_grad()
         with self.accelerator.autocast():
             loss = 0
-            cond = frames_z[:,:self.configs.input_length].permute(0, 2, 1, 3, 4) # B, C, T, H, W (B, 8, 5, 16, 16)
+            cond = frames_z[:,:self.configs.input_length].permute(0, 2, 1, 3, 4)
             for i in range(1, self.num_timesteps+1):
                 input_z = frames_z[:,self.configs.input_length*i:self.configs.input_length*(i+1)].permute(0, 2, 1, 3, 4)
                 t_seq = torch.ones([input_z.shape[0]], device=self.accelerator.device) * i / self.num_timesteps
@@ -64,16 +62,6 @@ class Model(object):
 
     @torch.amp.autocast("cuda")
     def test(self, feature_dataset_loader, epoch):
-        # if model.accelerator.is_main_process:
-        #     logging.basicConfig(
-        #             level=logging.INFO,
-        #             format="%(message)s",
-        #             handlers=[
-        #                 logging.FileHandler('{}.log'.format(args.model_name)),
-        #             ])
-        # eval = Evaluator(seq_len=args.output_length,
-        #                  value_scale=90.0,
-        #                  thresholds=args.thresholds)
         res_path = self.configs.model_name+'_'+self.configs.datasets+'_'+epoch
         image_path = os.path.join(res_path, 'images')
         image_id = 1
@@ -112,10 +100,11 @@ class Model(object):
                 samples = sample(torch.cat(total_frames_z, dim=2)).permute(0, 2, 1, 3, 4)
                 samples = self.accelerator.gather(samples)
                 B, T, C, H, W = samples.shape
-                img_gen = autoencoder.decode(samples.reshape(B*T, C, H, W)) # img_gen: B*T, 3, 128, 128
+                img_gen = autoencoder.decode(samples.reshape(B*T, C, H, W))
                 img_gen = (img_gen + 1) * 0.5
-                img_gen = img_gen.reshape(B, T, -1, self.configs.img_height, self.configs.img_width).cpu().numpy()
-                img_gen = np.clip(img_gen[:,:,2], 0.0, 1.0) # B, T, 128, 128
+                img_h, img_w = img_gen.shape[-2:]
+                img_gen = img_gen.reshape(B, T, -1, img_h, img_w).cpu().numpy()
+                img_gen = np.clip(img_gen[:,:,2], 0.0, 1.0)
                 if self.configs.datasets.split("_")[0] == "cikm":
                     img_gen = img_gen[:,:,13:-14,13:-14]
                     gt = gt[:,-self.configs.output_length:,13:-14,13:-14]
@@ -127,7 +116,5 @@ class Model(object):
                 if self.configs.generate_image and self.accelerator.is_main_process:
                     image_id = generate_image(img_gen, image_path, image_id, self.configs.datasets.split("_")[0])
                 evaluater.update(gt.swapaxes(1, 0), img_gen.swapaxes(1, 0))
-                # eval.evaluate(gt[:,:,np.newaxis], img_gen[:,:,np.newaxis])
         if self.accelerator.is_main_process:
             evaluater.save(res_path)
-            # eval.done()

@@ -6,7 +6,6 @@ import torch
 import datetime
 import numpy as np
 import pandas as pd
-from matplotlib import colors
 import numpy.random as nprand
 from torchvision import transforms 
 from typing import Union, Dict, Sequence
@@ -986,18 +985,11 @@ class SEVIRTorchDataset(TorchDataset):
         
         self.transform = transforms.Compose([
                         transforms.Resize((img_size, img_size)),
-                        # transforms.ToTensor(),
-                        # trans.Lambda(lambda x: x/255.0),
-                        # transforms.Normalize(mean=[0.5], std=[0.5]),
-                        # trans.RandomCrop(data_config["img_size"]),
-
                     ])
     def __getitem__(self, index):
         data_dict = self.sevir_dataloader._idx_sample(index=index)
         data = data_dict["vil"]
-        data = self.transform(data) ###.unsqueeze(2)
-        # print(data.shape)
-        return data
+        return self.transform(data)
 
     def __len__(self):
         return self.sevir_dataloader.__len__()
@@ -1018,7 +1010,7 @@ class SEVIRTorchDataset(TorchDataset):
             key: [data_dict[key]
                   for data_dict in data_dict_list]
             for key in data_dict_list[0]}
-        # TODO: key "mask" is not handled. Temporally fine since this func is not used
+        # The optional mask entry is not merged by this collate function.
         data_list_dict.pop("mask", None)
         merged_dict = {
             key: torch.cat(data_list,
@@ -1031,7 +1023,6 @@ class SEVIRTorchDataset(TorchDataset):
                              outer_batch_size=1,
                              collate_fn=None,
                              num_workers=1):
-        # TODO: num_workers > 1
         r"""
         We set the batch_size in Dataset by default, so outer_batch_size should be 1.
         In this case, not using `collate_fn` can save time.
@@ -1049,63 +1040,3 @@ class SEVIRTorchDataset(TorchDataset):
             num_workers=num_workers)
         return dataloader
 
-
-
-
-
-COLOR_MAP = [[0, 0, 0],
-              [0.30196078431372547, 0.30196078431372547, 0.30196078431372547],
-              [0.1568627450980392, 0.7450980392156863, 0.1568627450980392],
-              [0.09803921568627451, 0.5882352941176471, 0.09803921568627451],
-              [0.0392156862745098, 0.4117647058823529, 0.0392156862745098],
-              [0.0392156862745098, 0.29411764705882354, 0.0392156862745098],
-              [0.9607843137254902, 0.9607843137254902, 0.0],
-              [0.9294117647058824, 0.6745098039215687, 0.0],
-              [0.9411764705882353, 0.43137254901960786, 0.0],
-              [0.6274509803921569, 0.0, 0.0],
-              [0.9058823529411765, 0.0, 1.0]]
-
-HMF_COLORS = np.array([
-    [82, 82, 82],
-    [252, 141, 89],
-    [255, 255, 191],
-    [145, 191, 219]
-]) / 255
-PIXEL_SCALE = 255.0
-BOUNDS = [0.0, 16.0, 31.0, 59.0, 74.0, 100.0, 133.0, 160.0, 181.0, 219.0, PIXEL_SCALE]
-THRESHOLDS = (16, 74, 133, 160, 181, 219)
-
-
-def gray2color(image, **kwargs):
-
-    # 定义颜色映射和边界
-    cmap = colors.ListedColormap(COLOR_MAP )
-    bounds = BOUNDS
-    norm = colors.BoundaryNorm(bounds, cmap.N)
-
-    # 将图像进行染色
-    colored_image = cmap(norm(image))
-
-    return colored_image
-
-
-if __name__=='__main__':
-        
-    data = torch.randn(1, 256,256) * 255
-    data = data.numpy()
-    color = gray2color(data)
-
-
-
-# if __name__ == '__main__':
-#     dataset = SEVIRTorchDataset('sevir')
-#     iterator = iter(dataset)
-#     sample1 = next(iterator)
-#     sample2 = next(iterator)
-
-#     print(sample2.max(), sample2.min())
-#     print(sample1.max(), sample1.min())
-    
-#     vis_res(sample1.numpy(), sample2.numpy(), save_path='test', save_grays=True, do_hmf=True, color_residual=True, save_colored=True)
-
-#     print(len(dataset))

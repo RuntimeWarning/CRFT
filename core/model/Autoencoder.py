@@ -235,7 +235,6 @@ class AttnBlock(nn.Module):
 
 def make_attn(in_channels, attn_type="vanilla"):
     assert attn_type in ["vanilla", "linear", "none"], f'attn_type {attn_type} unknown'
-    # print(f"making attention of type '{attn_type}' with {in_channels} in_channels")
     if attn_type == "vanilla":
         return AttnBlock(in_channels)
     elif attn_type == "none":
@@ -351,8 +350,6 @@ class Decoder(nn.Module):
         block_in = ch*ch_mult[self.num_resolutions-1]
         curr_res = resolution // 2**(self.num_resolutions-1)
         self.z_shape = (1,z_channels,curr_res,curr_res)
-        # print("Working with z of shape {} = {} dimensions.".format(
-        #     self.z_shape, np.prod(self.z_shape)))
         # z to block_in
         self.conv_in = torch.nn.Conv2d(z_channels,
                                        block_in,
@@ -400,7 +397,6 @@ class Decoder(nn.Module):
                                         padding=1)
 
     def forward(self, z):
-        #assert z.shape[1:] == self.z_shape[1:]
         self.last_z_shape = z.shape
         # timestep embedding
         temb = None
@@ -507,7 +503,7 @@ def main():
     for fname in fnames:
         p = os.path.join(path, fname)
         gray_img = cv2.imread(p, cv2.IMREAD_GRAYSCALE)
-        gray_img = gray_img[np.newaxis,...]  # 添加通道维度
+        gray_img = gray_img[np.newaxis, ...]  # Add channel dimension.
         img = np.repeat(gray_img, 3, axis=0)
         img = torch.from_numpy(img).float() / 255.0
         img = T(img)
@@ -526,3 +522,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

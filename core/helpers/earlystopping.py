@@ -8,15 +8,8 @@ import numpy as np
 
 
 class EarlyStopping:
-    """Early stops the training if validation loss doesn't improve after a given patience."""
+    """Save checkpoints and prune non-decadal epoch folders."""
     def __init__(self, verbose=False):
-        """
-        Args:
-            patience (int): How long to wait after last time validation loss improved.
-                            Default: 7
-            verbose (bool): If True, prints a message for each validation loss improvement. 
-                            Default: False
-        """
         self.verbose = verbose
         self.best_score = np.inf
 
@@ -28,7 +21,7 @@ class EarlyStopping:
         self.save_checkpoint(val_loss, model, path, epoch)
 
     def save_checkpoint(self, val_loss, model, path, epoch):
-        '''Saves model when validation loss decrease.'''
+        """Save a model checkpoint for the current epoch."""
         if self.verbose:
             print(f'Loss decreased ({self.best_score:.4f} --> {val_loss:.4f}).  Saving model ...')
         for filename in glob.iglob(path + '/*'):

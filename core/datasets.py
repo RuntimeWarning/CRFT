@@ -1,9 +1,7 @@
 import os
-import re
 import cv2
 import h5py
 import torch
-import random
 import datetime
 import numpy as np
 import pandas as pd
@@ -23,8 +21,7 @@ class Shanghai_Datasets(data.Dataset):
         self.tf = transforms.Resize((128, 128))
 
     def __getitem__(self, index):
-        # img_start = np.random.randint(0, 26) #40-15+1=26
-        sequence = list(self.csvdata.iloc[index])#[img_start:img_start+15]
+        sequence = list(self.csvdata.iloc[index])
         t = []
         for j in range(len(sequence)):
             img = cv2.imread(os.path.join(self.path, sequence[j]),
@@ -59,7 +56,7 @@ class CIKM_Datasets(data.Dataset):
     def __init__(self, path, mode='train'):
         self.dataset = h5py.File(path, 'r', rdcc_nbytes=512**3)[mode]
         self.size = self.dataset.shape[0]
-        self.transform = transforms.CenterCrop((128, 128)) # transform 101x101 to 128x128
+        self.transform = transforms.CenterCrop((128, 128))
 
     def __getitem__(self, index):
         data = self.dataset[index] / 255.0
@@ -135,7 +132,7 @@ def get_datasets(name='cikm', opt='train', batch_size=16, num_workers=4, shuffle
                 img_size=128,
                 shuffle=shuffle,
                 seq_len=25,
-                stride=5,      # ?
+                stride=5,
                 sample_mode='sequent',
                 batch_size=batch_size,
                 num_shard=1,
@@ -155,7 +152,7 @@ def get_datasets(name='cikm', opt='train', batch_size=16, num_workers=4, shuffle
                 img_size=128,
                 shuffle=shuffle,
                 seq_len=25,
-                stride=5,      # ?
+                stride=5,
                 sample_mode='sequent',
                 batch_size=batch_size,
                 num_shard=1,
@@ -175,7 +172,7 @@ def get_datasets(name='cikm', opt='train', batch_size=16, num_workers=4, shuffle
                 shuffle=shuffle,
                 img_size=128,
                 seq_len=25,
-                stride=5,      # ?
+                stride=5,
                 sample_mode='sequent',
                 batch_size=batch_size,
                 num_shard=1,

@@ -20,12 +20,11 @@ class RFLOW:
         cond,
         t_seq
     ):
-        eular_steps = [999,749,499,249]
-        # eular_steps = [999,899,799,699,599,499,399,299,199,99]
-        for step in eular_steps:
+        euler_steps = [999, 749, 499, 249]
+        for step in euler_steps:
             t = torch.ones(z.shape[0],device=self.device)*step
             v = model(z, t, cond, t_seq)
-            z = z + v / len(eular_steps)
+            z = z + v / len(euler_steps)
         return z
 
     def training_losses(self, model, x_start, cond, t_seq):

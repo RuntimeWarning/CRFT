@@ -25,7 +25,10 @@ def get_hit_miss_counts(prediction, truth, thresholds=[30, 40, 50]):
 
 
 class Evaluation(object):
-    # Shape: (seq_len, batch_size, height, width)
+    """Accumulate frame-wise forecast metrics.
+
+    Input arrays use shape (seq_len, batch_size, height, width).
+    """
     def __init__(self, seq_len, value_scale=90.0, thresholds=[30, 40, 50]):
         self.value_scale = value_scale
         self._thresholds = np.array(thresholds)
@@ -48,7 +51,6 @@ class Evaluation(object):
         assert gt.shape[0] == self._seq_len
         assert gt.shape == pred.shape
         self._total_batch_num += batch_size
-        #TODO Save all the mse, mae, gdl, hits, misses, false_alarms and correct_negatives
         mse = (np.square(pred - gt)).sum(axis=(2, 3))
         mae = (np.abs(pred - gt)).sum(axis=(2, 3))
         self._mse += mse.sum(axis=1)
@@ -65,7 +67,7 @@ class Evaluation(object):
             for j in range(batch_size):
                 self._ssim[i] += compare_ssim(gt[i][j], 
                                               pred[i][j], 
-                                              data_range=1.0) #np.max(gt[i][j])
+                                              data_range=1.0)
                 self._psnr[i] += compare_psnr(gt[i][j], 
                                               pred[i][j], 
                                               data_range=1.0)
@@ -89,7 +91,6 @@ class Evaluation(object):
         precision = a / (a + b)
         recall = pod
         f1 = (2*precision*recall)/(precision+recall)
-        # expect = ((a+c)*(a+b)+(d+c)*(d+b))/n
         bias = (a+b)/(a+c)
         ssim = self._ssim / self._total_batch_num
         psnr = self._psnr / self._total_batch_num
@@ -100,33 +101,32 @@ class Evaluation(object):
             os.makedirs(path)
         pod, far, csi, hss, gss, mse, mae, precision, \
         f1, bias, ssim, accuracy, psnr = self.calculate_stat()
-        f = open(path + "/result.txt", 'w')
-        f.write("Total Sequence Num: %d, Out Seq Len: %d\n"
-                %(self._total_batch_num, self._seq_len))
-        for i in range(len(self._thresholds)):
-            f.write("Threshold = %g:\n" %self._thresholds[i])
-            f.write("   POD: %s\n" %str(['{:.4f}'.format(elem) for elem in pod[:, i]]).replace('\'', ''))
-            f.write("   FAR: %s\n" % str(['{:.4f}'.format(elem) for elem in far[:, i]]).replace('\'', ''))
-            f.write("   CSI: %s\n" % str(['{:.4f}'.format(elem) for elem in csi[:, i]]).replace('\'', ''))
-            f.write("   GSS: %s\n" % str(['{:.4f}'.format(elem) for elem in gss[:, i]]).replace('\'', ''))
-            f.write("   HSS: %s\n" % str(['{:.4f}'.format(elem) for elem in hss[:, i]]).replace('\'', ''))
-            f.write("   PRECISION: %s\n" % str(['{:.4f}'.format(elem) for elem in precision[:, i]]).replace('\'', ''))
-            f.write("   Accuracy: %s\n" % str(['{:.4f}'.format(elem) for elem in accuracy[:, i]]).replace('\'', ''))
-            f.write("   F1: %s\n" % str(['{:.4f}'.format(elem) for elem in f1[:, i]]).replace('\'', ''))
-            f.write("   POD stat: avg %.4f/final %.4f\n" %(pod[:, i].mean(), pod[-1, i]))
-            f.write("   FAR stat: avg %.4f/final %.4f\n" %(far[:, i].mean(), far[-1, i]))
-            f.write("   CSI stat: avg %.4f/final %.4f\n" %(csi[:, i].mean(), csi[-1, i]))
-            f.write("   GSS stat: avg %.4f/final %.4f\n" %(gss[:, i].mean(), gss[-1, i]))
-            f.write("   HSS stat: avg %.4f/final %.4f\n" % (hss[:, i].mean(), hss[-1, i]))
-            f.write("   PRECISION stat: avg %.4f/final %.4f\n" % (precision[:, i].mean(), precision[-1, i]))
-            f.write("   Accuracy stat: avg %.4f/final %.4f\n" % (accuracy[:, i].mean(), accuracy[-1, i]))
-            f.write("   F1 stat: avg %.4f/final %.4f\n" % (f1[:, i].mean(), f1[-1, i]))
-        f.write("MSE: %s\n" % str(['{:.4f}'.format(elem) for elem in mse]).replace('\'', ''))
-        f.write("MAE: %s\n" % str(['{:.4f}'.format(elem) for elem in mae]).replace('\'', ''))
-        f.write("SSIM: %s\n" % str(['{:.4f}'.format(elem) for elem in ssim]).replace('\'', ''))
-        f.write("PSNR: %s\n" % str(['{:.4f}'.format(elem) for elem in psnr]).replace('\'', ''))
-        f.write("MSE stat: avg %.4f/final %.4f\n" % (mse.mean(), mse[-1]))
-        f.write("MAE stat: avg %.4f/final %.4f\n" % (mae.mean(), mae[-1]))
-        f.write("SSIM stat: avg %.4f/final %.4f\n" % (ssim.mean(), ssim[-1])) 
-        f.write("PSNR stat: avg %.4f/final %.4f\n" % (psnr.mean(), psnr[-1])) 
-        f.close()
+        with open(path + "/result.txt", 'w') as f:
+            f.write("Total Sequence Num: %d, Out Seq Len: %d\n"
+                    %(self._total_batch_num, self._seq_len))
+            for i in range(len(self._thresholds)):
+                f.write("Threshold = %g:\n" %self._thresholds[i])
+                f.write("   POD: %s\n" %str(['{:.4f}'.format(elem) for elem in pod[:, i]]).replace('\'', ''))
+                f.write("   FAR: %s\n" % str(['{:.4f}'.format(elem) for elem in far[:, i]]).replace('\'', ''))
+                f.write("   CSI: %s\n" % str(['{:.4f}'.format(elem) for elem in csi[:, i]]).replace('\'', ''))
+                f.write("   GSS: %s\n" % str(['{:.4f}'.format(elem) for elem in gss[:, i]]).replace('\'', ''))
+                f.write("   HSS: %s\n" % str(['{:.4f}'.format(elem) for elem in hss[:, i]]).replace('\'', ''))
+                f.write("   PRECISION: %s\n" % str(['{:.4f}'.format(elem) for elem in precision[:, i]]).replace('\'', ''))
+                f.write("   Accuracy: %s\n" % str(['{:.4f}'.format(elem) for elem in accuracy[:, i]]).replace('\'', ''))
+                f.write("   F1: %s\n" % str(['{:.4f}'.format(elem) for elem in f1[:, i]]).replace('\'', ''))
+                f.write("   POD stat: avg %.4f/final %.4f\n" %(pod[:, i].mean(), pod[-1, i]))
+                f.write("   FAR stat: avg %.4f/final %.4f\n" %(far[:, i].mean(), far[-1, i]))
+                f.write("   CSI stat: avg %.4f/final %.4f\n" %(csi[:, i].mean(), csi[-1, i]))
+                f.write("   GSS stat: avg %.4f/final %.4f\n" %(gss[:, i].mean(), gss[-1, i]))
+                f.write("   HSS stat: avg %.4f/final %.4f\n" % (hss[:, i].mean(), hss[-1, i]))
+                f.write("   PRECISION stat: avg %.4f/final %.4f\n" % (precision[:, i].mean(), precision[-1, i]))
+                f.write("   Accuracy stat: avg %.4f/final %.4f\n" % (accuracy[:, i].mean(), accuracy[-1, i]))
+                f.write("   F1 stat: avg %.4f/final %.4f\n" % (f1[:, i].mean(), f1[-1, i]))
+            f.write("MSE: %s\n" % str(['{:.4f}'.format(elem) for elem in mse]).replace('\'', ''))
+            f.write("MAE: %s\n" % str(['{:.4f}'.format(elem) for elem in mae]).replace('\'', ''))
+            f.write("SSIM: %s\n" % str(['{:.4f}'.format(elem) for elem in ssim]).replace('\'', ''))
+            f.write("PSNR: %s\n" % str(['{:.4f}'.format(elem) for elem in psnr]).replace('\'', ''))
+            f.write("MSE stat: avg %.4f/final %.4f\n" % (mse.mean(), mse[-1]))
+            f.write("MAE stat: avg %.4f/final %.4f\n" % (mae.mean(), mae[-1]))
+            f.write("SSIM stat: avg %.4f/final %.4f\n" % (ssim.mean(), ssim[-1]))
+            f.write("PSNR stat: avg %.4f/final %.4f\n" % (psnr.mean(), psnr[-1]))

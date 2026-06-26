@@ -13,10 +13,10 @@ torch.manual_seed(0)
 
 
 def main(resolution=128, train_test='train'):
-    train_dataset_loader = get_datasets(name='sevir', opt=train_test,
-                                        batch_size=32, 
-                                        num_workers=4, 
-                                        shuffle=False)
+    dataset_loader = get_datasets(name='sevir', opt=train_test,
+                                  batch_size=32,
+                                  num_workers=4,
+                                  shuffle=False)
     vae = get_model('../vae_weights_sevir.pth', is_train=False)
     vae = nn.DataParallel(vae)
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -27,16 +27,13 @@ def main(resolution=128, train_test='train'):
     feature_size = 128
     num_pixels = feature_size * feature_size
     rain_amount_thresh = 0.5
-    for img in tqdm(train_dataset_loader):
+    for img in tqdm(dataset_loader):
         B, T, H, W = img.shape
         img = img.to(device)
 
         flags = []
         for im in img:
-            if torch.sum(im[0] > 0) >= num_pixels * rain_amount_thresh:
-                flags.append(True)
-            else:
-                flags.append(False)
+            flags.append(torch.sum(im[0] > 0) >= num_pixels * rain_amount_thresh)
 
         img = img.reshape(B*T, -1, H, W)
         img = img * 2. - 1
